@@ -12,6 +12,7 @@ def plot_snap(s,t_step):
     plt.show()
     plt.close()
 
+#Create a vídeo from a solved system
 def animate(s,filename='video.mp4',text=''):
     # Set up the figure, the axis, and the plot element for animation
     fig = plt.figure()

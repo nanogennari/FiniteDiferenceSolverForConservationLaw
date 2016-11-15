@@ -4,14 +4,10 @@ from scipy.integrate import quad
 class solver:
     
     def __init__(self,range_x,steps_x,range_t,steps_t,u0,fcoef,fargs):
-        #Store everything
+        #Store everything we need
         self.n = 0
         self.h = (range_x[1] - range_x[0])/steps_x
         self.k = (range_t[1] - range_t[0])/steps_t
-        self.range_x = range_x
-        self.range_t = range_t
-        self.steps_x = steps_x
-        self.steps_t = steps_t
         self.u0 = u0
         self.fcoef = fcoef
         self.fargs = fargs
