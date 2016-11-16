@@ -66,6 +66,33 @@ def BackwardEulerNoCicle(Un,k,h,a):
     B = Un
     return A,B
 
+# Finite diference using LaxFriedrichs
+def LaxFriedrichs(Un,k,h,a):
+    m = len(Un)
+    A = np.zeros([m,m],dtype=float)
+    B = np.zeros([m],dtype=float)
+    C = (a*k)/(h)
+    for i in range(0,m):
+        A[i][i] = 1
+        B[i] =  ( (Un[(i-1)%m]+Un[(i+1)%m]) - C*(Un[(i+1)%m]-Un[(i-1)%m]))/2.
+    return A,B
+    
+# Finite diference using LaxFriedrichs without cicle boundaries
+def LaxFriedrichsNoCicle(Un,k,h,a):
+    m = len(Un)
+    A = np.zeros([m,m],dtype=float)
+    B = np.zeros([m],dtype=float)
+    C = (a*k)/(h)
+    for i in range(0,m):
+        A[i][i] = 1
+        if i == 0:
+            B[i] =  ( (1+Un[i+1]) - C*(Un[i+1]-1))/2.
+        elif i == m-1:
+            B[i] =  ( Un[i-1] - C*(-Un[i-1]))/2.
+        else:
+            B[i] =  ( (Un[i-1]+Un[i+1]) - C*(Un[i+1]-Un[i-1]))/2.
+    return A,B
+
 # Finite diference using BeamWarming
 def BeamWarming(Un,k,h,a):
     m = len(Un)
