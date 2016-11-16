@@ -12,11 +12,11 @@ def plot_snap(s,t_step):
     plt.show()
     plt.close()
 
-#Create a vídeo from a solved system
-def animate(s,filename='video.mp4',text=''):
+#Create a video from a solved system
+def animate(s,xlim,ylim,filename='video.mp4',text=''):
     # Set up the figure, the axis, and the plot element for animation
     fig = plt.figure()
-    ax = plt.axes(xlim=(0, 1), ylim=(0, 1))
+    ax = plt.axes(xlim=(xlim[0], xlim[1]), ylim=(ylim[0], ylim[1]))
     line, = ax.plot([], [], lw=2)
     plt.xlabel('x')
     plt.ylabel('u')
@@ -28,7 +28,7 @@ def animate(s,filename='video.mp4',text=''):
         plt.title('t='+str(t))
         return line,
     # Animate and save file
-    anim = animation.FuncAnimation(fig, animate,frames=s.steps_t, interval=20, blit=True)
+    anim = animation.FuncAnimation(fig, animate,frames=len(s.U), interval=20, blit=True)
     anim.save(filename, fps=30, extra_args=['-vcodec', 'libx264'])
 
 # Gaussian Function to calculate u0
