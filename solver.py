@@ -3,14 +3,14 @@ from scipy.integrate import quad
 
 class solver:
     
-    def __init__(self,range_x,steps_x,range_t,steps_t,u0,fcoef,fargs):
+    def __init__(self,range_x,steps_x,range_t,steps_t,u0,fdisc,fargs):
         #Store everything we need
         self.n = 0
         self.h = (range_x[1] - range_x[0])/steps_x
         self.x0 = range_x[0]
         self.k = (range_t[1] - range_t[0])/steps_t
         self.u0 = u0
-        self.fcoef = fcoef
+        self.fdisc = fdisc
         self.fargs = fargs
         # Create array U
         self.U = np.zeros([steps_t,steps_x],dtype=float)
@@ -22,12 +22,13 @@ class solver:
     
     def step(self):
         n = self.n + 1
-        # Call finite diference method to calculate arrays A and B for the linear solver
-        A,B = self.fcoef(self.U[n-1],self.k,self.h,self.fargs)
-        # Call the linear solver
-        self.U[n] = np.linalg.solve(A,B)
+        # Call finite diference method
+        self.U[n] = self.fdisc(self.U[n-1],self.k,self.h,self.fargs)
         # Increment step
         self.n = n
+        
+    def get_t_step(self,t):
+        return int(t/self.k)
     
     def solve(self,rep=10):
         for i in range(1,len(self.U)):
@@ -51,7 +52,7 @@ def BackwardEuler(Un,k,h,a):
         A[i][i] = 1
         A[(i+1)%m][i] = -(k*a)/(2*h)
     B = Un
-    return A,B
+    return np.linalg.solve(A,B)
     
 # Finite diference using BackwardEuler without cicle boundaries
 def BackwardEulerNoCicle(Un,k,h,a):
@@ -64,69 +65,107 @@ def BackwardEulerNoCicle(Un,k,h,a):
         if i < m-1:
             A[i+1][i] = -(k*a)/(2*h)
     B = Un
-    return A,B
+    return np.linalg.solve(A,B)
+
+# Finite diference using OneSided Upwind
+def OneSidedUp(Un,k,h,a):
+    m = len(Un)
+    Unp = np.zeros([m],dtype=float)
+    C = (a*k)/(h)
+    for i in range(0,m):
+        Unp[i] =  Un[i] - C*(Un[i]-Un[(i-1)%m])
+    return Unp
+
+# Finite diference using OneSided Upwind
+def OneSidedUpNoCicle(Un,k,h,a):
+    m = len(Un)
+    Unp = np.zeros([m],dtype=float)
+    C = (a*k)/(h)
+    Unp[0] = 1
+    Unp[m-1] = 0
+    for i in range(1,m-1):
+        Unp[i] =  Un[i] - C*(Un[i]-Un[(i-1)%m])
+    return Unp
+    
+# Finite diference using OneSided Downwind
+def OneSidedDown(Un,k,h,a):
+    m = len(Un)
+    Unp = np.zeros([m],dtype=float)
+    C = (a*k)/(h)
+    for i in range(0,m):
+        Unp[i] =  Un[i] - C*(Un[(i+1)%m]-Un[i])
+    return Unp
 
 # Finite diference using LaxFriedrichs
 def LaxFriedrichs(Un,k,h,a):
     m = len(Un)
-    A = np.zeros([m,m],dtype=float)
-    B = np.zeros([m],dtype=float)
+    Unp = np.zeros([m],dtype=float)
     C = (a*k)/(h)
     for i in range(0,m):
-        A[i][i] = 1
-        B[i] =  ( (Un[(i-1)%m]+Un[(i+1)%m]) - C*(Un[(i+1)%m]-Un[(i-1)%m]))/2.
-    return A,B
+        Unp[i] =  ( (Un[(i-1)%m]+Un[(i+1)%m]) - C*(Un[(i+1)%m]-Un[(i-1)%m]))/2.
+    return Unp
     
 # Finite diference using LaxFriedrichs without cicle boundaries
 def LaxFriedrichsNoCicle(Un,k,h,a):
     m = len(Un)
-    A = np.zeros([m,m],dtype=float)
-    B = np.zeros([m],dtype=float)
+    Unp = np.zeros([m],dtype=float)
     C = (a*k)/(h)
     for i in range(0,m):
-        A[i][i] = 1
         if i == 0:
-            B[i] =  ( (1+Un[i+1]) - C*(Un[i+1]-1))/2.
+            Unp[i] =  ( (1+Un[i+1]) - C*(Un[i+1]-1))/2.
         elif i == m-1:
-            B[i] =  ( Un[i-1] - C*(-Un[i-1]))/2.
+            Unp[i] =  ( Un[i-1] - C*(-Un[i-1]))/2.
         else:
-            B[i] =  ( (Un[i-1]+Un[i+1]) - C*(Un[i+1]-Un[i-1]))/2.
-    return A,B
+            Unp[i] =  ( (Un[i-1]+Un[i+1]) - C*(Un[i+1]-Un[i-1]))/2.
+    return Unp
 
 # Finite diference using BeamWarming
 def BeamWarming(Un,k,h,a):
     m = len(Un)
-    A = np.zeros([m,m],dtype=float)
-    B = np.zeros([m],dtype=float)
+    Unp = np.zeros([m],dtype=float)
     C = (a*k)/(h)
     for i in range(0,m):
-        A[i][i] = 1
-        B[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*Un[(i-1)%m]+Un[(i-2)%m]) + (C*C)*(Un[i]-2.*Un[(i-1)%m]+Un[(i-2)%m]))/2.
-    return A,B
+        Unp = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*Un[(i-1)%m]+Un[(i-2)%m]) + (C*C)*(Un[i]-2.*Un[(i-1)%m]+Un[(i-2)%m]))/2.
+    return Unp
 
 # Finite diference using BeamWarming without cicle boundaries
 def BeamWarmingNoCicle(Un,k,h,a):
     m = len(Un)
-    A = np.zeros([m,m],dtype=float)
-    B = np.zeros([m],dtype=float)
+    Unp = np.zeros([m],dtype=float)
     C = (a*k)/(h)
     for i in range(0,m):
-        A[i][i] = 1
         if i > 1:
-            B[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*Un[(i-1)%m]+Un[(i-2)%m]) + (C*C)*(Un[i]-2.*Un[(i-1)%m]+Un[(i-2)%m]))/2.
+            Unp[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*Un[(i-1)%m]+Un[(i-2)%m]) + (C*C)*(Un[i]-2.*Un[(i-1)%m]+Un[(i-2)%m]))/2.
         elif i == 1:
-            B[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*Un[(i-1)%m]+1) + (C*C)*(Un[i]-2.*Un[(i-1)%m]+1))/2.
+            Unp[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*Un[(i-1)%m]+1) + (C*C)*(Un[i]-2.*Un[(i-1)%m]+1))/2.
         else:
-            B[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*1+1) + (C*C)*(Un[i]-2.*1+1))/2.
-    return A,B
+            Unp[i] = Un[i] + ( (-1.)*C*(3.*Un[i]-4.*1+1) + (C*C)*(Un[i]-2.*1+1))/2.
+    return Unp
 
 # Finite diference using LaxWendroff
 def LaxWendroff(Un,k,h,a):
     m = len(Un)
-    A = np.zeros([m,m],dtype=float)
-    B = np.zeros([m],dtype=float)
+    Unp = np.zeros([m],dtype=float)
     C = (a*k)/(h)
     for i in range(0,m):
-        A[i][i] = 1
-        B[i] = Un[i] + ( (-1.)*C*(Un[(i+1)%m]-Un[(i-1)%m]) + (C*C)*(Un[(i+1)%m]-2.*Un[i]+Un[(i-1)%m]))/2.
-    return A,B
+        Unp = Un[i] + ( (-1.)*C*(Un[(i+1)%m]-Un[(i-1)%m]) + (C*C)*(Un[(i+1)%m]-2.*Un[i]+Un[(i-1)%m]))/2.
+    return Unp
+
+# Finite diference using OneSided Upwind for Burgers Equation
+def OneSidedUpBurgers(Un,k,h,a):
+    m = len(Un)
+    Unp = np.zeros([m],dtype=float)
+    C = k/h
+    for i in range(0,m):
+        Unp[i] =  Un[i] - Un[i]*C*(Un[i]-Un[(i-1)%m])
+    return Unp
+    
+# Finite diference using OneSided Upwind for Burgers Equation without cicle boundaries
+def OneSidedUpBurgersNoCicle(Un,k,h,a):
+    m = len(Un)
+    Unp = np.zeros([m],dtype=float)
+    Unp[0] = 1
+    Unp[m-1] = 0.2
+    for i in range(1,m-1):
+        Unp[i] =  Un[i] - Un[i]*(k/h)*(Un[i]-Un[i-1])
+    return Unp
