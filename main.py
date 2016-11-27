@@ -23,7 +23,7 @@ range_x = [-1.,6.]
 ulim = [-0.0,1.19]
 xlim = [1.5,3.5]
 #xlim = range_x
-a = 1.0
+fpar = 1.0
 
 #finite_diference = "BackwardEuler"
 #finite_diference = "BackwardEulerNoCicle"
@@ -72,8 +72,9 @@ if (finite_diference == "OneSidedUpBurgers"):
 if (finite_diference == "OneSidedUpBurgersNoCicle"):
     from solver import OneSidedUpBurgersNoCicle as FiniteMethod
 
+
 #Set-up the solver
-s = solver(range_x,step_x,range_t,step_t,u0,FiniteMethod,a)
+s = solver(range_x,step_x,range_t,step_t,u0,FiniteMethod,fpar)
 #Run the solver
 s.solve()
 np.save('/home/nano/DataDumpTCC/'+title+finite_diference,s.U)

@@ -169,3 +169,12 @@ def OneSidedUpBurgersNoCicle(Un,k,h,a):
     for i in range(1,m-1):
         Unp[i] =  Un[i] - Un[i]*(k/h)*(Un[i]-Un[i-1])
     return Unp
+
+# Conservative Gudunov
+def GudunovRoe(Un,k,h,fl):
+    m = len(Un)
+    Unp = np.zeros([m],dtype=float)
+    
+    for i in range(0,m):
+        Unp[i] =  Un[i] - (k/h)*(f(Un[i]) +)
+    return Unp

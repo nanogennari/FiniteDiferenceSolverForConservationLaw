@@ -1,8 +1,8 @@
-# FiniteDiferenceSolverForLinearConservationLaw
+# NumericSolverForLinearConservationLaw
 
 A simple python script to solve Linear Conservations Laws of the form:
 
-u_t + a u_x = 0
+u_t + f(u)_x = 0
 
 It requires:
 -python-numpy
