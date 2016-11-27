@@ -9,3 +9,5 @@ It requires:
 -python-scipy
 -python-matplotlib
 -python-tk
+
+Licenced under GNU GPLv3.
