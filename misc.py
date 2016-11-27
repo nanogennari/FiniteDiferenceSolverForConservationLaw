@@ -34,8 +34,8 @@ def animate(s,xlim,ylim,skip='1',filename='video.mp4',text=''):
         plt.xlabel('x')
         plt.ylabel('u')
         plt.suptitle(text, fontsize=14, fontweight='bold')
-        plt.plot(x,U,'kx', label='Ujn')
-        plt.plot(x,u, label='u(x,t)')
+        plt.plot(x,U)#,'kx', label='Ujn')
+        #plt.plot(x,u, label='u(x,t)')
         plt.title('t='+str(round(t,3)))
         if (i%10 == 0):
             print "t="+str(t)
@@ -65,8 +65,8 @@ def plot_ts(s,ts,xlim,ylim,filename,form,title,subtitle,xlabel='x',ylabel='u'):
                 u[i] = 1.
             else:
                 u[i] = 0.2
-        plt.plot(x,U,'kx',label="Unj")
-        plt.plot(x,u,label="u(x,t)")
+        #plt.plot(x,U,'kx',label="Unj")
+        plt.plot(x,U,label="t="+str(round(t)))
     plt.title(title)
     plt.legend(ncol=3)
     plt.savefig(filename+'.'+form,format=form,dpi=200)

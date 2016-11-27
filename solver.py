@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.integrate import quad
+from scipy.optimize import minimize_scalar
 
 class solver:
     
@@ -170,11 +171,131 @@ def OneSidedUpBurgersNoCicle(Un,k,h,a):
         Unp[i] =  Un[i] - Un[i]*(k/h)*(Un[i]-Un[i-1])
     return Unp
 
+# An rimman solver for Gudunov and vanLeer
+def riemman_solver(ul,ur,f,fl,fpar):
+    flul = fl(ul,fpar)
+    flur = fl(ur,fpar)
+    if flul >= 0:
+        if flur >= 0:
+            u = ul
+        else:      
+            foveru = (f(ur,fpar) - f(ul,fpar))/(ur - ul)
+            if foveru >= 0:
+                u = ul
+            else:
+                u = ur        
+    else:
+        if flur > 0:
+            if Un[(i-1)%m] <= Un[i]:
+                res = minimize_scalar(f,bounds=(ul,ur),args=(fpar),method='bounded')
+                u = res.x
+            else:
+                res = minimize_scalar(-f,bounds=(ul,ur),args=(fpar),method='bounded')
+                u = res.x  
+        else:
+            u = ur
+    return u
+
 # Conservative Gudunov
-def GudunovRoe(Un,k,h,fl):
+def Gudunov(Un,k,h,par):
     m = len(Un)
-    Unp = np.zeros([m],dtype=float)
+    bounds = par[2]
+    f = par[0]
+    fl = par[1]
+    fpar = par[3:]
     
-    for i in range(0,m):
-        Unp[i] =  Un[i] - (k/h)*(f(Un[i]) +)
+    Unp = np.zeros([m],dtype=float)
+    if bounds != "cicle":
+        Unp[0] = bounds[0]
+        Unp[m-1] = bounds[1]
+        steps = range(1,m-1)
+        ur = riemman_solver(Un[0],Un[1],f,fl,fpar)
+    else:
+        steps = range(0,m)
+        ur = riemman_solver(Un[m-1],Un[0],f,fl,fpar)
+    
+    for i in steps:
+        ul = ur
+        ur = riemman_solver(Un[i],Un[(i+1)%m],f,fl,fpar)
+        ful = f(ul,fpar)
+        fur = f(ur,fpar)
+        Unp[i] =  Un[i] - (k/h)*(fur - ful)
     return Unp
+
+# S functions for vanLeer
+def vanLeerS(Un,i):
+    m = len(Un)
+    if (Un[(i+1)%m]-Un[i]) != 0:
+        theta = (Un[i]-Un[(i-1)%m])/(Un[(i+1)%m]-Un[i])
+        print theta
+        if (theta > 0.):
+            phi = (abs(theta) - theta)/(1+abs(theta))
+            return (Un[(i+1)%m]-Un[i])*phi
+        else:
+            return 0
+    else:
+        return 0
+
+def minmod(Un,i):
+    m = len(Un)
+    if (Un[(i+1)%m]-Un[i]) != 0:
+        theta = (Un[i]-Un[(i-1)%m])/(Un[(i+1)%m]-Un[i])
+        if theta > 0:
+            phi = min(theta,1.)
+            return (Un[(i+1)%m]-Un[i])*phi
+        else:
+            return 0
+    else:
+        return 0
+
+def superbee(Un,i):
+    m = len(Un)
+    if (Un[(i+1)%m]-Un[i]) != 0:
+        theta = (Un[i]-Un[(i-1)%m])/(Un[(i+1)%m]-Un[i])
+        if theta > 0:
+            phi = max(min(2*theta,1),min(theta,2))
+            return (Un[(i+1)%m]-Un[i])*phi
+        else:
+            return 0
+    else:
+        return 0
+
+# Conservative vanLeer
+def vanLeerFunc(Un,k,h,par,S):
+    m = len(Un)
+    bounds = par[2]
+    f = par[0]
+    fl = par[1]
+    fpar = par[3:]
+    
+    Unp = np.zeros([m],dtype=float)
+    if bounds != "cicle":
+        Unp[0] = bounds[0]
+        Unp[m-1] = bounds[1]
+        steps = range(2,m-2)
+        ulr = 0
+        urr = 0
+    else:
+        steps = range(0,m)
+        
+    for i in steps:
+        ull = ulr
+        ulr = urr
+        url = Un[i] + .5*S(Un,i)
+        urr = Un[i+1] - .5*S(Un,i+1)
+        ul = riemman_solver(ull,ulr,f,fl,fpar)
+        ur = riemman_solver(url,urr,f,fl,fpar)
+        ful = f(ul,fpar)
+        fur = f(ur,fpar)
+        Unp[i] =  Un[i] - (k/h)*(fur - ful)
+    return Unp
+
+def vanLeer(Un,k,h,par):
+    return vanLeerFunc(Un,k,h,par,vanLeerS)
+    
+def vanLeerMinmod(Un,k,h,par):
+    return vanLeerFunc(Un,k,h,par,minmod)
+
+def vanLeerSuperbee(Un,k,h,par):
+    return vanLeerFunc(Un,k,h,par,superbee)
+
