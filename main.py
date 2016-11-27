@@ -75,10 +75,10 @@ if (finite_diference == "OneSidedUpBurgersNoCicle"):
 #Set-up the solver
 s = solver(range_x,step_x,range_t,step_t,u0,FiniteMethod,a)
 #Run the solver
-#s.solve()
-#np.save('/home/nano/DataDumpTCC/'+title+finite_diference,s.U)
+s.solve()
+np.save('/home/nano/DataDumpTCC/'+title+finite_diference,s.U)
 #s.U = np.load('data.npy')
-s.U = np.load('/home/nano/DataDumpTCC/'+title+finite_diference+'.npy')
+#s.U = np.load('/home/nano/DataDumpTCC/'+title+finite_diference+'.npy')
 
 #Plot solution
 misc.plot_ts(s,[5],xlim,ulim,finite_diference,'pdf','Burgers Finite , t=5 ,h='+str(h)+',k='+str(k),'','x','u')
